@@ -2718,73 +2718,65 @@ JOIN plans p ON s.plan_id = p.plan_id
 WHERE s.plan_id = 4;
 
 /**5.How many customers have churned straight after their initial free trial - what percentage is this rounded to the nearest whole number?**/
-WITH ranking AS (SELECT 
-  s.customer_id, 
-  s.plan_id, 
-  p.plan_name,
- ROW_NUMBER() OVER(
-    PARTITION BY s.customer_id 
-    ORDER BY s.plan_id) AS plan_rank 
-FROM subscriptions s
-JOIN plans p
-  ON s.plan_id = p.plan_id) 
 SELECT 
   COUNT(*) AS churn_count,
   ROUND(100 * COUNT(*) / (
     SELECT COUNT(DISTINCT customer_id) 
     FROM subscriptions),0) AS churn_percentage
-FROM ranking
+FROM (SELECT 
+       s.customer_id, 
+       s.plan_id, 
+       p.plan_name,
+        ROW_NUMBER() OVER(PARTITION BY s.customer_id 
+        ORDER BY s.plan_id) AS plan_rank 
+      FROM subscriptions s
+      JOIN plans p
+      ON s.plan_id = p.plan_id) ranking
+
 WHERE plan_id = 4  
-  AND plan_rank = 2;
+AND plan_rank = 2;
   
 /**6.What is the number and percentage of customer plans after their initial free trial?**/
-WITH next_plan_cte AS (
 SELECT 
+  next_plan, 
+  COUNT(*) AS conversions,
+  ROUND(100 * COUNT(*) / (SELECT COUNT(DISTINCT customer_id) 
+               FROM subscriptions),1) AS conversion_percentage
+FROM (SELECT 
   customer_id, 
   plan_id, 
   LEAD(plan_id, 1) OVER( -- Offset by 1 to retrieve the immediate row's value below 
     PARTITION BY customer_id 
     ORDER BY plan_id) as next_plan
-FROM foodie_fi.subscriptions)
-
-SELECT 
-  next_plan, 
-  COUNT(*) AS conversions,
-  ROUND(100 * COUNT(*) / (
-    SELECT COUNT(DISTINCT customer_id) 
-    FROM subscriptions),1) AS conversion_percentage
-FROM next_plan_cte
+    FROM subscriptions)next_plan_cte
 WHERE next_plan IS NOT NULL 
   AND plan_id = 0
 GROUP BY next_plan
 ORDER BY next_plan;
 /**7.What is the customer count and percentage breakdown of all 5 plan_name values at 2020-12-31?**/
 
-With next_plan AS(
-SELECT 
-  customer_id, 
-  plan_id, 
-  start_date,
-  LEAD(start_date, 1) OVER(PARTITION BY customer_id ORDER BY start_date) as next_date
-FROM subscriptions
-WHERE start_date <= '2020-12-31'
-),
-customer_breakdown AS (
-  SELECT 
-    plan_id, 
-    COUNT(DISTINCT customer_id) AS customers
-  FROM next_plan
-  WHERE 
-    (next_date IS NOT NULL AND (start_date < '2020-12-31' 
-      AND next_date > '2020-12-31'))
-    OR (next_date IS NULL AND start_date < '2020-12-31')
-  GROUP BY plan_id)
-
 SELECT plan_id, customers, 
   ROUND(100 * customers::NUMERIC / (
     SELECT COUNT(DISTINCT customer_id) 
     FROM subscriptions),1) AS percentage
-FROM customer_breakdown
+FROM (SELECT plan_id, 
+       COUNT(DISTINCT customer_id) AS customers
+      FROM (SELECT 
+            customer_id, 
+            plan_id, 
+            start_date,
+            LEAD(start_date, 1) OVER(PARTITION BY customer_id ORDER BY start_date) as next_date
+           FROM subscriptions
+           WHERE start_date <= '2020-12-31'
+           )next_plan,
+      WHERE 
+       (next_date IS NOT NULL AND (start_date < '2020-12-31' 
+      AND next_date > '2020-12-31'))
+      OR (next_date IS NULL AND start_date < '2020-12-31')
+      GROUP BY plan_id) customer_breakdown:
+
+
+
 GROUP BY plan_id, customers
 ORDER BY plan_id;
 
