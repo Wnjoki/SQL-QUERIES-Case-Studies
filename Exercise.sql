@@ -26,7 +26,7 @@ INSERT INTO person
 (person_id, fname, lname, gender, birth_date)
  VALUES (null, 'William','Turner', 'M', '1972-05-27');
 
-DROP TABLE favorite_food
+DROP TABLE favorite_food;
 
 DESC person;
 
