@@ -65,7 +65,7 @@ SELECT customer_id, COUNT(DISTINCT(order_date)) AS total_visits
 FROM sales 
 GROUP BY customer_id;
 
-/*SELECT customer_id, product_name
+SELECT customer_id, product_name
 FROM ordered_sales_cte
 WITH ordered_sales_cte AS
 (
@@ -77,7 +77,7 @@ WITH ordered_sales_cte AS
   ON s.product_id = m.product_id
 )
 WHERE rank = 1
-GROUP BY customer_id, product_name;*/
+GROUP BY customer_id, product_name;
 
 SELECT COUNT(s.product_id) as most_purchased,m.product_name
 FROM sales AS s
