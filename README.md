@@ -1,4 +1,4 @@
-Thanks to @DataWithDanny for the excellent SQL case studies! 👋🏻
+Thanks to @DataWithDanny for the excellent SQL case studies! 
 I tried solving the case study questions
 
 Find the full case studies on https://8weeksqlchallenge.com/
